@@ -302,3 +302,6 @@ Meaning:
 - Used for:
    - Plunger position
    - Nudging
+
+# Appendix
+[SDL3 Scan Codes](https://github.com/libsdl-org/SDL/blob/main/include/SDL3/SDL_scancode.h)
