@@ -32,7 +32,30 @@ Compile:
 ```
 sudo apt install libsdl3-dev libncurses-dev libncursesw5-dev
 gcc sdl3-joymap-vpx.c -o sdl3-joymap-vpx `pkg-config --cflags --libs sdl3 ncursesw`
-./sdl3-joymap-vpx
+```
+
+## Usage
+```
+./sdl3-joymap-vpx [OPTIONS]
+```
+
+### Options
+| Option | Description |
+|--------|-------------|
+| `-l`, `--list` | List all available joystick devices and exit |
+| `-j N`, `--joystick N` | Select joystick by index (default: 0) |
+| `-h`, `--help` | Show help message |
+
+### Examples
+```bash
+# List all connected joysticks
+./sdl3-joymap-vpx -l
+
+# Use the second joystick (index 1)
+./sdl3-joymap-vpx -j 1
+
+# Show help
+./sdl3-joymap-vpx --help
 ```
 
 # VPinball 10.8.1 – Input Mapping Format (Keyboard / Mouse / Joystick)

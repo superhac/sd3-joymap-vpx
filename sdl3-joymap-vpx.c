@@ -5,6 +5,8 @@
 #include <ncurses.h>
 #include <stdbool.h>
 #include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
 #include <math.h>
 
 #define AXIS_DEADZONE 0.05f
@@ -20,8 +22,53 @@ static void guid_to_string(SDL_GUID guid, char *out, size_t len)
     SDL_GUIDToString(guid, out, len);
 }
 
-int main(void)
+static void print_usage(const char *prog)
 {
+    fprintf(stderr, "Usage: %s [OPTIONS]\n", prog);
+    fprintf(stderr, "Options:\n");
+    fprintf(stderr, "  -l, --list       List all available joystick devices and exit\n");
+    fprintf(stderr, "  -j, --joystick N Select joystick by index (default: 0)\n");
+    fprintf(stderr, "  -h, --help       Show this help message\n");
+}
+
+static void list_joysticks(SDL_JoystickID *joy_ids, int num_joys)
+{
+    printf("Available joysticks (%d):\n", num_joys);
+    for (int i = 0; i < num_joys; i++) {
+        const char *name = SDL_GetJoystickNameForID(joy_ids[i]);
+        char guid_str[64];
+        guid_to_string(SDL_GetJoystickGUIDForID(joy_ids[i]), guid_str, sizeof(guid_str));
+        printf("  [%d] %s\n", i, name ? name : "Unknown");
+        printf("       GUID: %s\n", guid_str);
+    }
+}
+
+int main(int argc, char *argv[])
+{
+    int selected_joy = 0;
+    bool list_only = false;
+
+    /* ---------- ARGUMENT PARSING ---------- */
+    for (int i = 1; i < argc; i++) {
+        if (strcmp(argv[i], "-l") == 0 || strcmp(argv[i], "--list") == 0) {
+            list_only = true;
+        } else if (strcmp(argv[i], "-j") == 0 || strcmp(argv[i], "--joystick") == 0) {
+            if (i + 1 >= argc) {
+                fprintf(stderr, "Error: -j/--joystick requires an argument\n");
+                print_usage(argv[0]);
+                return 1;
+            }
+            selected_joy = atoi(argv[++i]);
+        } else if (strcmp(argv[i], "-h") == 0 || strcmp(argv[i], "--help") == 0) {
+            print_usage(argv[0]);
+            return 0;
+        } else {
+            fprintf(stderr, "Unknown option: %s\n", argv[i]);
+            print_usage(argv[0]);
+            return 1;
+        }
+    }
+
     /* ---------- SDL INIT ---------- */
     if (SDL_Init(SDL_INIT_JOYSTICK) < 0) {
         fprintf(stderr, "SDL_Init failed: %s\n", SDL_GetError());
@@ -36,7 +83,25 @@ int main(void)
         return 0;
     }
 
-    SDL_Joystick *joy = SDL_OpenJoystick(joy_ids[0]);
+    /* List mode: print devices and exit */
+    if (list_only) {
+        list_joysticks(joy_ids, num_joys);
+        SDL_free(joy_ids);
+        SDL_Quit();
+        return 0;
+    }
+
+    /* Validate joystick selection */
+    if (selected_joy < 0 || selected_joy >= num_joys) {
+        fprintf(stderr, "Error: Invalid joystick index %d (valid range: 0-%d)\n",
+                selected_joy, num_joys - 1);
+        list_joysticks(joy_ids, num_joys);
+        SDL_free(joy_ids);
+        SDL_Quit();
+        return 1;
+    }
+
+    SDL_Joystick *joy = SDL_OpenJoystick(joy_ids[selected_joy]);
     if (!joy) {
         fprintf(stderr, "Failed to open joystick: %s\n", SDL_GetError());
         SDL_Quit();
